@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import random
 from typing import Awaitable, Callable
 
 from .db import log_run
@@ -160,12 +162,33 @@ def _to_mod(block) -> GeneratedMod:
 
 
 async def generate_mod(req: GenerateRequest, status: StatusCb) -> dict:
-    # DEMO_MODE: scripted prompts return pre-tested results instantly.
+    # DEMO_MODE: scripted prompts return pre-tested results, but paced through realistic
+    # staged status so it looks like live work (not an instant canned reply).
     if is_demo():
         canned = match_demo(req.prompt)
         if canned is not None:
-            await status("Thinking…")
-            await status("Applying…")
+            try:
+                scale = float(os.getenv("DEMO_SPEED", "1") or 1)
+            except ValueError:
+                scale = 1.0
+            is_widget = canned.get("kind") == "widget"
+            stages = (
+                [
+                    ("Reading the page…", 0.5),
+                    ("Writing the widget…", 1.9),
+                    ("Checking the data source…", 1.2),
+                    ("Testing the widget…", 1.1),
+                ]
+                if is_widget
+                else [
+                    ("Reading the page…", 0.5),
+                    ("Writing the mod…", 1.9),
+                    ("Testing the script…", 1.2),
+                ]
+            )
+            for msg, secs in stages:
+                await status(msg)
+                await asyncio.sleep(max(0.0, secs * scale + random.uniform(-0.25, 0.4)))
             return canned
 
     if not os.getenv("ANTHROPIC_API_KEY"):
