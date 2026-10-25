@@ -10,6 +10,17 @@ from typing import Awaitable, Callable
 from .db import log_run
 from .models import GenerateRequest, GeneratedMod, TestResult
 from .vision import analyze_screen
+
+try:
+    # Local-only demo pack (git-ignored). Absent in the public repo → no-ops.
+    from .demo import is_demo, match_demo
+except Exception:  # pragma: no cover
+
+    def is_demo() -> bool:
+        return False
+
+    def match_demo(prompt: str):  # type: ignore[no-redef]
+        return None
 from .tools import (
     WRITE_MOD_TOOL,
     WRITE_WIDGET_TOOL,
@@ -43,6 +54,16 @@ for you (plain statements, no top-level return, no outer IIFE).
 lazy loads and client-side navigation.
 - Prefer stable selectors (ids, roles, aria-labels, visible text, data-testid); avoid \
 auto-generated class hashes.
+
+write_mod also covers resource control and simple automations:
+- Resource control: reduce a page's resource use — pause/stop autoplay on <video>/<audio>, \
+disable CSS animations/transitions (e.g. `*{animation:none!important;transition:none!important}`), \
+stop runaway animation loops / high-frequency timers where safe, and hide or unload heavy \
+auto-playing content.
+- Automations (agentic control): perform a multi-step page action — click, fill inputs, \
+scroll, expand "load more", auto-dismiss popups/cookie banners — and re-run on new content \
+via a MutationObserver or a modest setInterval. Keep actions idempotent and SAFE: never \
+submit payments, delete data, or take destructive/irreversible actions.
 
 Rules for write_widget: provide renderJs (the body of function render(el, data)), a \
 dataSource JSON string, a sampleData JSON string, and refreshSec. Keep render resilient to \
@@ -139,6 +160,14 @@ def _to_mod(block) -> GeneratedMod:
 
 
 async def generate_mod(req: GenerateRequest, status: StatusCb) -> dict:
+    # DEMO_MODE: scripted prompts return pre-tested results instantly.
+    if is_demo():
+        canned = match_demo(req.prompt)
+        if canned is not None:
+            await status("Thinking…")
+            await status("Applying…")
+            return canned
+
     if not os.getenv("ANTHROPIC_API_KEY"):
         await status("No API key set — returning a placeholder mod.")
         mod = stub_mod(req.prompt, req.url)

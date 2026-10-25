@@ -207,6 +207,8 @@ async def fetch_widget_data(ds: dict):
     import httpx
 
     kind = ds.get("kind")
+    if kind == "demo":
+        return ds.get("data")
     if kind == "apify":
         token = os.getenv("APIFY_TOKEN")
         if not token:

@@ -16,6 +16,9 @@ __pycache__/
 .env
 *.local
 
+# Local-only demo pack (hardcoded stage flows — keep out of the public repo)
+backend/app/demo.py
+
 # OS
 .DS_Store
 Thumbs.db
