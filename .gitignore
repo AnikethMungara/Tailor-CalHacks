@@ -1,0 +1,21 @@
+# Node / extension
+extension/node_modules/
+extension/.output/
+extension/.wxt/
+convex/node_modules/
+node_modules/
+
+# Python / backend
+backend/.venv/
+backend/tailor.db
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Env / secrets
+.env
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
